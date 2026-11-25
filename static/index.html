@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Self-hosted Nepali and Hindi AI text to speech">
+  <title>Resham Voice API</title><link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><div class="brand"><div class="logo">RV</div><div><h1>Resham Voice</h1><p>Self-hosted AI speech studio</p></div></div><span class="status"><i></i> API dashboard</span></header>
+    <section class="hero"><p class="eyebrow">TEXT TO SPEECH · NEPALI + HINDI + ENGLISH</p><h2>Turn your words<br><em>into natural voice.</em></h2><p class="sub">Generate audio on your own FastAPI server. Download WAV files or connect your apps through the REST API.</p></section>
+    <section class="panel">
+      <div class="panel-head"><div><h3>Create speech</h3><p>Write text and choose a language.</p></div><span class="tag">WAV output</span></div>
+      <label for="language">VOICE LANGUAGE</label><select id="language"><option value="ne">Nepali · नेपाली</option><option value="hi">Hindi · हिन्दी</option><option value="en">English</option></select>
+      <label for="text">YOUR TEXT</label><textarea id="text" maxlength="3000" placeholder="यहाँ आफ्नो टेक्स्ट लेख्नुहोस्… / यहाँ अपना टेक्स्ट लिखें…"></textarea>
+      <div class="controls"><div class="speed"><label for="speed">SPEAKING SPEED</label><select id="speed"><option value="0.8">Slow</option><option value="1" selected>Normal</option><option value="1.15">Fast</option></select></div><span id="count">0 / 3000</span></div>
+      <button id="generate">Generate voice <span>→</span></button>
+      <p id="message" role="status" aria-live="polite">First generation may take longer while the voice model downloads.</p>
+      <div id="playerWrap" class="player hidden"><audio id="player" controls></audio><a id="download" download="resham-voice.wav">Download WAV ↓</a></div>
+    </section>
+    <section class="api-info" id="keys"><h3>API keys for other apps</h3><p>Enter your <b>admin</b> key, name the app, and generate a new key. It is shown only once.</p>
+      <label for="apikey">ADMIN KEY</label><input id="apikey" type="password" placeholder="rv_… (see api_keys.json)" autocomplete="off">
+      <div class="keyrow"><input id="keyname" maxlength="60" placeholder="App name, e.g. Android app"><button id="genkey" type="button">Generate key</button></div>
+      <p id="keymsg" class="muted" role="status"></p><pre id="newkey" class="hidden"></pre><div id="keylist"></div></section>
+    <section class="api-info"><h3>Use from other applications</h3><p>POST <code>/v1/audio/speech</code> with header <code>X-API-Key: YOUR_KEY</code> (or <code>Authorization: Bearer YOUR_KEY</code>)</p><pre>{
+  "text": "नमस्कार, तपाईंलाई कस्तो छ?",
+  "language": "ne",
+  "length_scale": 1.0
+}</pre><p class="muted">Languages: <b>ne</b> Nepali · <b>hi</b> Hindi · <b>en</b> English. API docs: <a href="/docs">/docs</a></p></section>
+    <footer>Resham Voice API · Powered by Python FastAPI + Piper TTS</footer>
+  </main><script src="/app.js"></script>
+</body></html>

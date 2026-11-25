@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Resham Voice · API Key Test</title><style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:#0f1115;color:#e8eaf0}
+main{max-width:560px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px}
+.muted{color:#8b93a7;margin:0 0 16px}
+label{display:block;margin:14px 0 6px;font-size:12px;letter-spacing:.08em;color:#8b93a7}
+input,select,textarea{width:100%;padding:10px 12px;background:#181b22;color:inherit;border:1px solid #2a2f3a;border-radius:8px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+button{padding:10px 14px;border:1px solid #2a2f3a;border-radius:8px;background:#1f2430;color:inherit;font:inherit;cursor:pointer}
+button:hover{background:#272d3b}
+button:disabled{opacity:.5;cursor:wait}
+button.primary{width:100%;margin-top:14px;background:#4f6df5;border-color:#4f6df5}
+.row{display:flex;gap:8px;margin-top:14px}
+.row button{flex:1}
+audio{width:100%;margin-top:14px}
+.hidden{display:none}
+pre{background:#181b22;border:1px solid #2a2f3a;border-radius:8px;padding:12px;white-space:pre-wrap;word-break:break-word;min-height:60px}
+pre.ok{border-color:#2e9e5b}
+pre.err{border-color:#d9534f}
+</style>
+</head>
+<body>
+  <main>
+    <h1>API Key Test</h1>
+    <p class="muted">Check that an app key works against your server.</p>
+    <label for="server">SERVER URL</label>
+    <input id="server" placeholder="http://localhost:8000" autocomplete="off">
+    <label for="key">API KEY</label>
+    <input id="key" type="password" placeholder="rv_…" autocomplete="off">
+    <div class="row">
+      <button id="btnHealth" type="button">1. Health</button>
+      <button id="btnVoices" type="button">2. Check key (voices)</button>
+    </div>
+    <label for="lang">LANGUAGE</label>
+    <select id="lang"><option value="en">English</option><option value="ne">Nepali · नेपाली</option><option value="hi">Hindi · हिन्दी</option></select>
+    <label for="text">TEXT</label>
+    <textarea id="text">Hello, this is a test.</textarea>
+    <button id="btnSpeak" type="button" class="primary">3. Generate speech</button>
+    <audio id="audio" controls class="hidden"></audio>
+    <h3>Result</h3>
+    <pre id="log">Ready.</pre>
+  </main>
+  <script>
+const $ = s => document.querySelector(s);
+const server = $('#server'), key = $('#key'), log = $('#log'), audio = $('#audio');
+
+server.value = location.origin.startsWith('http') ? location.origin : 'http://localhost:8000';
+try { server.value = localStorage.getItem('rv_test_server') || server.value; key.value = localStorage.getItem('rv_test_key') || ''; } catch {}
+
+const base = () => server.value.trim().replace(/\/+$/, '');
+const show = (msg, cls = '') => { log.textContent = msg; log.className = cls; };
+const save = () => { try { localStorage.setItem('rv_test_server', server.value.trim()); localStorage.setItem('rv_test_key', key.value.trim()); } catch {} };
+const headers = (extra = {}) => ({ 'X-API-Key': key.value.trim(), ...extra });
+
+async function run(btn, fn) {
+  save();
+  if (!key.value.trim() && fn !== health) { show('Enter an API key first.', 'err'); return; }
+  btn.disabled = true;
+  try { await fn(); } catch (e) { show('Network error: ' + e.message + '\n(Check the server URL, that the server is running, and CORS.)', 'err'); }
+  finally { btn.disabled = false; }
+}
+
+async function health() {
+  const r = await fetch(base() + '/health');
+  show(`HTTP ${r.status}\n` + JSON.stringify(await r.json(), null, 2), r.ok ? 'ok' : 'err');
+}
+
+async function voices() {
+  const r = await fetch(base() + '/v1/voices', { headers: headers() });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) return show('401 — API key is wrong or missing.', 'err');
+  show(`HTTP ${r.status} — key is valid ✔\n` + JSON.stringify(d, null, 2), r.ok ? 'ok' : 'err');
+}
+
+async function speak() {
+  show('Generating… (first request may download the voice model)');
+  audio.classList.add('hidden');
+  const r = await fetch(base() + '/v1/audio/speech', {
+    method: 'POST',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ text: $('#text').value.trim(), language: $('#lang').value, length_scale: 1.0 })
+  });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    return show(`HTTP ${r.status} — ${r.status === 401 ? 'API key is wrong or missing.' : (d.detail || 'Request failed')}`, 'err');
+  }
+  const blob = await r.blob();
+  audio.src = URL.createObjectURL(blob);
+  audio.classList.remove('hidden');
+  audio.play().catch(() => {});
+  show(`HTTP ${r.status} — key works ✔\nReceived ${(blob.size / 1024).toFixed(1)} KB of audio.`, 'ok');
+}
+
+$('#btnHealth').onclick = e => run(e.target, health);
+$('#btnVoices').onclick = e => run(e.target, voices);
+$('#btnSpeak').onclick = e => run(e.target, speak);
+</script>
+</body>
+</html>
